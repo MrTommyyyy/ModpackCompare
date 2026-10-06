@@ -4,6 +4,13 @@ Offline comparisons for Minecraft mod folders. Save a snapshot before changing
 a pack, save another afterwards, and see which JARs were added, removed,
 changed, or renamed. Python 3.11+, no external packages, MIT licensed.
 
+
+[Download the latest release](https://github.com/MrTommyyyy/ModpackCompare/releases/latest) · [Report an issue](https://github.com/MrTommyyyy/ModpackCompare/issues)
+
+![Tests](https://github.com/MrTommyyyy/ModpackCompare/actions/workflows/tests.yml/badge.svg)
+
+**Download format:** Python source ZIP. Python 3.11+ is required; this is not a standalone EXE.
+
 ## Why I'm building this
 
 I enjoy modded Minecraft, but keeping track of changes to a pack can be a pain.
@@ -16,7 +23,7 @@ real bug reports will guide what comes next.
 
 ## Quick start
 
-Download the repository with **Code → Download ZIP**, extract it, and open a
+Download the ZIP under **Assets** on the latest release page, extract it, and open a
 terminal in the extracted folder. Install Python 3.11 or newer first. On Windows
 use `py` instead of `python` if that is your Python launcher.
 
