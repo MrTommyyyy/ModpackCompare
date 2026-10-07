@@ -1,12 +1,13 @@
 import contextlib
 import io
+import json
 import hashlib
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from modpack_compare import FORMAT, compare, main, snapshot, validate_manifest
+from modpack_compare import FORMAT, compare, main, snapshot, validate_manifest, write_report
 
 
 class InventoryTests(unittest.TestCase):
@@ -75,6 +76,44 @@ class InventoryTests(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(main(["snapshot", str(self.folder), "--output", str(jar)]), 1)
         self.assertEqual(jar.read_bytes(), b"keep")
+
+    def test_verify_current_folder_and_export_without_changing_baseline(self):
+        jar = self.folder / "example.jar"
+        jar.write_bytes(b"old")
+        baseline = self.folder / "baseline.json"
+        write_report(baseline, snapshot(self.folder))
+        original = baseline.read_bytes()
+        report = self.folder / "diff.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(main(["verify", str(baseline), str(self.folder)]), 0)
+            jar.write_bytes(b"new")
+            self.assertEqual(main(["verify", str(baseline), str(self.folder), "--output", str(report)]), 2)
+        self.assertEqual(json.loads(report.read_text())["changed"], ["example.jar"])
+        self.assertEqual(baseline.read_bytes(), original)
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(main(["verify", str(baseline), str(self.folder), "--output", str(baseline)]), 1)
+        self.assertEqual(baseline.read_bytes(), original)
+
+    def test_failed_report_write_preserves_previous_report(self):
+        output = self.folder / "report.json"
+        output.write_text("previous")
+        with patch("modpack_compare.json.dump", side_effect=ValueError("encode failed")):
+            with self.assertRaises(ValueError):
+                write_report(output, {})
+        self.assertEqual(output.read_text(), "previous")
+        self.assertEqual(list(self.folder.glob(".modpack-*")), [])
+
+    def test_report_symlink_is_rejected(self):
+        target = self.folder / "target.jar"
+        target.write_bytes(b"keep")
+        link = self.folder / "report.json"
+        try:
+            link.symlink_to(target)
+        except OSError:
+            self.skipTest("Symbolic links unavailable")
+        with self.assertRaises(ValueError):
+            write_report(link, {})
+        self.assertEqual(target.read_bytes(), b"keep")
 
     def test_scan_fails_if_file_changes_during_hash(self):
         jar = self.folder / "moving.jar"

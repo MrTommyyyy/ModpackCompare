@@ -10,7 +10,7 @@ import re
 import sys
 import tempfile
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 FORMAT = "modpack-compare/v1"
 
 
@@ -94,6 +94,8 @@ def compare(old: dict, new: dict) -> dict:
 
 def write_report(path: Path, data: dict) -> None:
     """Replace only the chosen report; preserve the old report if writing fails."""
+    if path.suffix.lower() != ".json" or path.is_symlink():
+        raise ValueError("Report output must be a .json file and must not be a symbolic link.")
     temp_path = None
     try:
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
@@ -119,6 +121,14 @@ def main(argv=None) -> int:
     diff.add_argument("old", type=Path)
     diff.add_argument("new", type=Path)
     diff.add_argument("--json", action="store_true")
+    verify = commands.add_parser("verify", help="Compare a saved manifest with a current mods folder")
+    verify.add_argument("old", type=Path)
+    verify.add_argument("folder", type=Path)
+    verify.add_argument("--recursive", action="store_true")
+    for command in (diff, verify):
+        if command is verify:
+            command.add_argument("--json", action="store_true")
+        command.add_argument("--output", type=Path, help="Save differences to JSON; cannot replace input manifests")
     args = parser.parse_args(argv)
     try:
         if args.command == "snapshot":
@@ -128,7 +138,14 @@ def main(argv=None) -> int:
             write_report(args.output, data)
             print(f"Saved {len(data['files'])} JAR entries to {args.output}")
             return 0
-        report = compare(load_manifest(args.old), load_manifest(args.new))
+        if args.output:
+            inputs = [args.old] + ([args.new] if args.command == "compare" else [])
+            if any(args.output.resolve() == source.resolve() for source in inputs):
+                raise ValueError("Difference output must not replace an input manifest.")
+        new = snapshot(args.folder, args.recursive) if args.command == "verify" else load_manifest(args.new)
+        report = compare(load_manifest(args.old), new)
+        if args.output:
+            write_report(args.output, report)
         if args.json:
             print(json.dumps(report, indent=2))
         else:

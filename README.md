@@ -1,5 +1,7 @@
 # ModpackCompare
 
+Version: **0.2.0**
+
 Offline comparisons for Minecraft mod folders. Save a snapshot before changing
 a pack, save another afterwards, and see which JARs were added, removed,
 changed, or renamed. Python 3.11+, no external packages, MIT licensed.
@@ -9,7 +11,7 @@ changed, or renamed. Python 3.11+, no external packages, MIT licensed.
 
 ![Tests](https://github.com/MrTommyyyy/ModpackCompare/actions/workflows/tests.yml/badge.svg)
 
-**Download format:** Python source ZIP. Python 3.11+ is required; this is not a standalone EXE.
+**Download format:** a portable Windows x64 ZIP with an executable, plus a separate Python source ZIP.
 
 ## Why I'm building this
 
@@ -21,9 +23,9 @@ report I can use when troubleshooting a pack update.
 This is a new project. The current release is a working starting point, and
 real bug reports will guide what comes next.
 
-## Quick start
+## Quick start from Python source
 
-Download the ZIP under **Assets** on the latest release page, extract it, and open a
+Download the source ZIP under **Assets** on the latest release page, extract it, and open a
 terminal in the extracted folder. Install Python 3.11 or newer first. On Windows
 use `py` instead of `python` if that is your Python launcher.
 
@@ -80,7 +82,7 @@ to install. JarCheck is the companion project for duplicate and archive checks.
 python -m unittest discover -v
 ```
 
-Eight tests cover real changes, renames, ambiguous copies, recursive scanning,
+Eleven tests cover real changes, renames, ambiguous copies, recursive scanning,
 manifest validation, changed files during scanning, exit codes and protection
 against writing a report over a JAR. GitHub Actions runs the suite on Windows,
 macOS and Ubuntu with Python 3.11 and 3.13.
@@ -92,3 +94,15 @@ macOS and Ubuntu with Python 3.11 and 3.13.
 - Sample reports from real modpack updates, with private paths removed.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [LICENSE](LICENSE).
+
+## Check a folder against a saved baseline
+
+```bash
+python modpack_compare.py verify before.json mods --recursive --output differences.json
+```
+
+Use the same subfolder setting as your original snapshot. No second manifest is needed. Both `compare` and `verify` can save differences with `--output`. Input manifests cannot be replaced by the differences report; symbolic-link outputs are refused. Exit code 2 means differences, 1 means an error, and 0 means a match.
+
+## Portable Windows download
+
+Choose the `Windows-x64.zip` release asset and extract it. Python is bundled. These are terminal tools: open PowerShell in the extracted folder and run `.\ModpackCompare.exe --help`. The separate source ZIP supports Python 3.11+ on other platforms.
